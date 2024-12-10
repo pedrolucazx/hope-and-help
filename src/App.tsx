@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { toaster } from '@/components/ui/toaster'; // Verifique o caminho correto para o toaster
+import { toaster } from '@/components/ui/toaster';
 
 const axiosInstance = axios.create({
   baseURL: 'https://jsonplaceholder.typicode.com',
