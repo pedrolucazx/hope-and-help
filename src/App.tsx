@@ -1,71 +1,99 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
-  Checkbox,
-  ClientOnly,
-  HStack,
   Heading,
-  Progress,
-  RadioGroup,
-  Skeleton,
-  VStack,
+  Input,
+  Spinner,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
-import { ColorModeToggle } from '@/components/color-mode-toggle';
+import { useState } from 'react';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { toaster } from '@/components/ui/toaster'; // Verifique o caminho correto para o toaster
+
+const axiosInstance = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+});
+
+const mock = new MockAdapter(axiosInstance, { delayResponse: 3000 });
+
+mock.onGet('/posts/1').reply(200, {
+  title: 'Mocked Post Title',
+});
+
+mock.onPost('/posts').reply(201, {
+  id: 101,
+  title: 'New Mocked Post',
+});
+
+async function fetchData() {
+  const res = await axiosInstance.get('/posts/1');
+  return res.data;
+}
+
+async function createPost(newPost: { title: string }) {
+  const response = await axiosInstance.post('/posts', newPost);
+  if (response.status !== 201) {
+    throw new Error('Failed to create post');
+  }
+  return response.data;
+}
 
 export default function Page() {
+  const [title, setTitle] = useState('');
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['todos'],
+    queryFn: fetchData,
+  });
+
+  const { mutate } = useMutation({
+    mutationFn: createPost,
+    onSuccess: () => {
+      toaster.create({
+        title: 'Post created.',
+        type: 'success',
+      });
+    },
+    onError: () => {
+      toaster.create({
+        title: 'Error creating post.',
+        type: 'error',
+      });
+    },
+  });
+
+  if (isLoading) return <Spinner />;
+
+  if (error) return <Text>Error loading data</Text>;
+
+  const handleSubmit = () => {
+    if (title.trim()) {
+      mutate({ title });
+      setTitle('');
+    }
+  };
+
   return (
-    <Box textAlign="center" fontSize="xl" pt="30vh">
-      <VStack gap="8">
-        <img alt="chakra logo" src="/vite.svg" width="80" height="80" />
-        <Heading size="2xl" letterSpacing="tight">
-          Welcome to Chakra UI v3 + Vite
-        </Heading>
-
-        <HStack gap="10">
-          <Checkbox.Root defaultChecked>
-            <Checkbox.HiddenInput />
-            <Checkbox.Control>
-              <Checkbox.Indicator />
-            </Checkbox.Control>
-            <Checkbox.Label>Checkbox</Checkbox.Label>
-          </Checkbox.Root>
-
-          <RadioGroup.Root display="inline-flex" defaultValue="1">
-            <RadioGroup.Item value="1" mr="2">
-              <RadioGroup.ItemHiddenInput />
-              <RadioGroup.ItemControl>
-                <RadioGroup.ItemIndicator />
-              </RadioGroup.ItemControl>
-              <RadioGroup.ItemText lineHeight="1">Radio</RadioGroup.ItemText>
-            </RadioGroup.Item>
-
-            <RadioGroup.Item value="2">
-              <RadioGroup.ItemHiddenInput />
-              <RadioGroup.ItemControl>
-                <RadioGroup.ItemIndicator />
-              </RadioGroup.ItemControl>
-              <RadioGroup.ItemText lineHeight="1">Radio</RadioGroup.ItemText>
-            </RadioGroup.Item>
-          </RadioGroup.Root>
-        </HStack>
-
-        <Progress.Root width="300px" value={65} striped>
-          <Progress.Track>
-            <Progress.Range />
-          </Progress.Track>
-        </Progress.Root>
-
-        <HStack>
-          <Button>Let's go!</Button>
-          <Button variant="outline">bun install @chakra-ui/react</Button>
-        </HStack>
-      </VStack>
-
-      <Box pos="absolute" top="4" right="4">
-        <ClientOnly fallback={<Skeleton w="10" h="10" rounded="md" />}>
-          <ColorModeToggle />
-        </ClientOnly>
+    <>
+      <Box p={4}>
+        <Heading>Post Title:</Heading>
+        <Text mt={2}>{data?.title}</Text>
       </Box>
-    </Box>
+      <Box p={4}>
+        <Stack>
+          <Input
+            placeholder="Post title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <Button colorScheme="blue" onClick={handleSubmit}>
+            Create Post
+          </Button>
+        </Stack>
+      </Box>
+    </>
   );
 }
