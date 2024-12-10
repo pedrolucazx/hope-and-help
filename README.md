@@ -70,10 +70,6 @@ async function createPost(newPost: { title: string }) {
 
 Realiza uma requisição POST para criar um novo post. Se a resposta não for bem-sucedida (status diferente de 201), lança um erro.
 
-### 4. Componente Principal (`Page`)
-
-Dentro do componente `Page`, temos o seguinte fluxo:
-
 #### Estados Locais
 
 ```js
